@@ -3,6 +3,19 @@ import time
 
 pygame.init()
 
+# Colors
+BLACK = (0, 0, 0)
+
+def typewriter(text, x, y, color= BLACK, delay=50):
+    """Render text with a typewriter effect."""
+    displayed_text = ""
+    for char in text:
+        displayed_text += char
+        text_surface = font.render(displayed_text, True, color)
+        screen.fill(BLACK, (x, y, WIDTH, 50))  # Clear the previous text line
+        screen.blit(text_surface, (x, y))
+        pygame.display.update()
+        pygame.time.delay(delay)  # Delay in milliseconds
 
 alphanumeric_list = [
     "A1", "B2", "E3", "C4", "O5", "D6", "I7", "F8", "U9", "G10",   # 4 vowels: A, E, O, I, U
@@ -17,8 +30,6 @@ alphanumeric_list = [
     "P91", "Q92", "U93", "R94", "E95", "S96", "I97", "T98", "O99", "V100"  # 4 vowels: U, E, I, O
 ]
 
-
-
 # Screen settings
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -28,73 +39,89 @@ pygame.display.set_caption("Escape Room")
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 RED = (200, 0, 0)
+GREEN = (0, 200, 0)
 
 # Fonts
 font = pygame.font.Font(None, 36)
-
-def typewriter_effect(text, x, y, delay=0.1):
-    displayed_text = ""
-    for char in text:
-        displayed_text += char
-        render_text(displayed_text, x, y)
-        pygame.display.update()
-        time.sleep(delay)
 
 def render_text(text, x, y, color=WHITE):
     text_surface = font.render(text, True, color)
     screen.blit(text_surface, (x, y))
 
-def main():
+def intro_screen():
+    """Display the intro screen with the 'You are captured...' message."""
     running = True
-    show_intro = True
-    start_game = False
+    while running:
+        screen.fill(BLACK)
+        typewriter("You are captured in a mysterious room!", 150, 200, WHITE)
+        typewriter("Solve the puzzles to escape.", 200, 250, WHITE)
+        typewriter("Press ENTER to start the game...", 200, 300, GREEN)
+        pygame.display.update()
 
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                return False
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                return True
+
+def puzzle_game():
+    """Run the alphanumeric puzzle game."""
+    start_index = 0
+    running = True
+    user_input = ""
     while running:
         screen.fill(BLACK)
         
-        if show_intro:
-            typewriter_effect("You have been captured...", 200, 200)
-            time.sleep(1)
-            typewriter_effect("Find a way to escape...", 200, 250)
-            pygame.display.update()
-            time.sleep(1)
-            
-            # Display "Press Enter"
-            typewriter_effect("Press ENTER to continue...", 250, 400, RED)
-            pygame.display.update()
-            
-            while show_intro:
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        pygame.quit()
-                        return
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-                        show_intro = False
-                        start_game = True
-                
-        if start_game:
-            screen.fill(BLACK)
-            render_text("Welcome to the Escape Room", 200, 200)
-            render_text("Click START to begin", 250, 300)
-            
-            start_button = pygame.Rect(300, 350, 200, 50)
-            pygame.draw.rect(screen, RED, start_button)
-            render_text("START", 365, 365, BLACK)
-            
-            pygame.display.update()
-            
-            waiting_for_start = True
-            while waiting_for_start:
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        pygame.quit()
-                        return
-                    if event.type == pygame.MOUSEBUTTONDOWN:
-                        if start_button.collidepoint(event.pos):
-                            print("Game Starts!")  # Replace this with actual game logic
-                            running = False  # Exiting for now
-                            break
+        # Display the current 10 alphanumeric strings
+        current_chunk = alphanumeric_list[start_index:start_index + 10]
+        y_offset = 50
+        for item in current_chunk:
+            render_text(item, 50, y_offset)
+            y_offset += 30
         
+        # Display instructions
+        render_text("Enter the numbers from vowels in reverse order:", 50, 400)
+        render_text(f"Your Input: {user_input}", 50, 450, GREEN)
+        
+        pygame.display.update()
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                return
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:
+                    # Check the answer
+                    number_list = [item[1:] for item in current_chunk[::-1] if item[0] in 'AEIOU']
+                    answer = ''.join(number_list)
+                    if user_input == answer:
+                        render_text("Correct!", 50, 500, GREEN)
+                    else:
+                        render_text("Incorrect!", 50, 500, RED)
+                    pygame.display.update()
+                    time.sleep(2)
+                    
+                    # Move to the next chunk
+                    start_index += 10
+                    if start_index >= len(alphanumeric_list):
+                        start_index = 0  # Wrap around to the beginning
+                    user_input = ""  # Reset user input
+                elif event.key == pygame.K_BACKSPACE:
+                    user_input = user_input[:-1]
+                else:
+                    user_input += event.unicode
+
+def main():
+    """Main function to run the game."""
+    running = True
+
+    # Show the intro screen first
+    if not intro_screen():
+        return
+
+    # Start the puzzle game
+    puzzle_game()
 
     pygame.quit()
 
