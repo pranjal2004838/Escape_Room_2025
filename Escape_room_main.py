@@ -1,12 +1,47 @@
 import pygame
 import time
 
+import random
+
+def glitch_effect(duration=4):
+    """Display a realistic glitch effect resembling static noise for a short duration."""
+    start_time = time.time()
+    while time.time() - start_time < duration:
+        screen.fill(BLACK)  # Clear the screen
+
+        # Add random noise (static pixels)
+        for _ in range(3000):  # Number of "ants" (random pixels)
+            x = random.randint(0, WIDTH - 1)
+            y = random.randint(0, HEIGHT - 1)
+            color = random.choice([WHITE, BLACK, (100, 100, 100)])  # Add gray for variation
+            screen.set_at((x, y), color)  # Set the pixel color at (x, y)
+
+        # Add flickering horizontal lines
+        for _ in range(10):  # Number of lines
+            x_start = 0
+            y = random.randint(0, HEIGHT - 1)
+            x_end = WIDTH
+            color = random.choice([WHITE, (150, 150, 150)])
+            pygame.draw.line(screen, color, (x_start, y), (x_end, y), random.randint(1, 3))  # Random thickness
+
+        # Add random rectangles (screen distortion)
+        for _ in range(5):  # Number of rectangles
+            x = random.randint(0, WIDTH - 50)
+            y = random.randint(0, HEIGHT - 50)
+            width = random.randint(50, 200)
+            height = random.randint(10, 50)
+            color = random.choice([WHITE, BLACK, (50, 50, 50)])
+            pygame.draw.rect(screen, color, (x, y, width, height))
+
+        pygame.display.update()
+        pygame.time.delay(50)  # Delay between frames to simulate flickering
+        
 pygame.init()
 
 # Colors
 BLACK = (0, 0, 0)
 
-def typewriter(text, x, y, color= BLACK, delay=50):
+def typewriter(text, x, y, color= BLACK, delay=15):
     """Render text with a typewriter effect."""
     displayed_text = ""
     for char in text:
@@ -16,6 +51,8 @@ def typewriter(text, x, y, color= BLACK, delay=50):
         screen.blit(text_surface, (x, y))
         pygame.display.update()
         pygame.time.delay(delay)  # Delay in milliseconds
+
+
 
 alphanumeric_list = [
     "A1", "B2", "E3", "C4", "O5", "D6", "I7", "F8", "U9", "G10",   # 4 vowels: A, E, O, I, U
@@ -70,22 +107,25 @@ def puzzle_game():
     start_index = 0
     running = True
     user_input = ""
+    incorrect_attempts = 0  # Count incorrect answers
+
     while running:
         screen.fill(BLACK)
-        
+
         # Display the current 10 alphanumeric strings
         current_chunk = alphanumeric_list[start_index:start_index + 10]
         y_offset = 50
         for item in current_chunk:
             render_text(item, 50, y_offset)
             y_offset += 30
-        
+
         # Display instructions
         render_text("Enter the numbers from vowels in reverse order:", 50, 400)
         render_text(f"Your Input: {user_input}", 50, 450, GREEN)
-        
+        render_text(f"Incorrect Attempts: {incorrect_attempts}/3", 50, 500, RED)
+
         pygame.display.update()
-        
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -96,21 +136,33 @@ def puzzle_game():
                     number_list = [item[1:] for item in current_chunk[::-1] if item[0] in 'AEIOU']
                     answer = ''.join(number_list)
                     if user_input == answer:
-                        render_text("Correct!", 50, 500, GREEN)
+                        render_text("Correct!", 50, 550, GREEN)
+                        pygame.display.update()
+                        time.sleep(2)
+
+                        # Move to the next chunk
+                        start_index += 10
+                        if start_index >= len(alphanumeric_list):
+                            start_index = 0  # Wrap around to the beginning
+                        user_input = ""  # Reset user input
                     else:
-                        render_text("Incorrect!", 50, 500, RED)
-                    pygame.display.update()
-                    time.sleep(2)
-                    
-                    # Move to the next chunk
-                    start_index += 10
-                    if start_index >= len(alphanumeric_list):
-                        start_index = 0  # Wrap around to the beginning
-                    user_input = ""  # Reset user input
+                        incorrect_attempts += 1
+                        render_text("Incorrect!", 50, 550, RED)
+                        pygame.display.update()
+                        time.sleep(2)
+                        user_input = ""  # Reset user input
+
+                        if incorrect_attempts >= 3:
+                            screen.fill(BLACK)
+                            typewriter("Too many incorrect attempts. Game Over.", 100, 250, RED)
+                            pygame.display.update()
+                            time.sleep(3)
+                            running = False  # Exit game
                 elif event.key == pygame.K_BACKSPACE:
                     user_input = user_input[:-1]
                 else:
                     user_input += event.unicode
+
 
 def main():
     """Main function to run the game."""
@@ -119,6 +171,9 @@ def main():
     # Show the intro screen first
     if not intro_screen():
         return
+
+    # Show the glitch effect
+    glitch_effect(duration=4)
 
     # Start the puzzle game
     puzzle_game()
