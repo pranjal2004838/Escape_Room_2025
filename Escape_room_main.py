@@ -1,47 +1,66 @@
 import pygame
-import time
+import random, time
+import math
 
-import random
+
+
 
 def glitch_effect(duration=4):
-    """Display a realistic glitch effect resembling static noise for a short duration."""
+    """Chaotic and fast hacking animation with erratic code rain and flickering warnings."""
     start_time = time.time()
+    code_columns = [random.randint(0, WIDTH) for _ in range(40)]
+    column_speeds = [random.uniform(8.0, 16.0) for _ in range(len(code_columns))]
+    trails = [[] for _ in code_columns]
+
     while time.time() - start_time < duration:
-        screen.fill(BLACK)  # Clear the screen
+        screen.fill(BLACK)
 
-        # Add random noise (static pixels)
-        for _ in range(3000):  # Number of "ants" (random pixels)
-            x = random.randint(0, WIDTH - 1)
-            y = random.randint(0, HEIGHT - 1)
-            color = random.choice([WHITE, BLACK, (100, 100, 100)])  # Add gray for variation
-            screen.set_at((x, y), color)  # Set the pixel color at (x, y)
+        # Fast and chaotic code rain
+        for i, col in enumerate(code_columns):
+            speed = column_speeds[i]
+            trail = trails[i]
 
-        # Add flickering horizontal lines
-        for _ in range(10):  # Number of lines
-            x_start = 0
-            y = random.randint(0, HEIGHT - 1)
-            x_end = WIDTH
-            color = random.choice([WHITE, (150, 150, 150)])
-            pygame.draw.line(screen, color, (x_start, y), (x_end, y), random.randint(1, 3))  # Random thickness
+            if not trail or trail[-1][1] > random.randint(10, 30):
+                char = random.choice("アイウエオカキクケコサシスセソABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()")
+                trail.append([char, 0])
 
-        # Add random rectangles (screen distortion)
-        for _ in range(5):  # Number of rectangles
-            x = random.randint(0, WIDTH - 50)
-            y = random.randint(0, HEIGHT - 50)
-            width = random.randint(50, 200)
-            height = random.randint(10, 50)
-            color = random.choice([WHITE, BLACK, (50, 50, 50)])
-            pygame.draw.rect(screen, color, (x, y, width, height))
+            new_trail = []
+            for j, (char, y) in enumerate(trail):
+                fade = max(0, 255 - j * 35)
+                color = (0, fade, 0)
+                x_jitter = col + random.randint(-2, 2)  # slight horizontal chaos
+                render_text(char, x_jitter, int(y), color)
+                y += speed + random.uniform(-2, 4)  # speed variation
+                if random.random() < 0.05:
+                    y += 50  # glitch jump
+                if y < HEIGHT:
+                    new_trail.append([char, y])
+            trails[i] = new_trail
+
+        # Aggressive flickering scanlines
+        if random.random() < 0.5:
+            for _ in range(random.randint(3, 6)):
+                y = random.randint(0, HEIGHT)
+                color = (0, random.randint(100, 255), 0)
+                pygame.draw.line(screen, color, (0, y), (WIDTH, y), 1)
+
+        # Flickering warning
+        if random.random() < 0.7:
+            render_text("☠", WIDTH // 2 - 20 + random.randint(-5, 5), HEIGHT // 2 - 60 + random.randint(-5, 5), RED)
+            render_text("SYSTEM FAILURE!", WIDTH // 2 - 110 + random.randint(-5, 5), HEIGHT // 2 + 30 + random.randint(-5, 5), RED)
 
         pygame.display.update()
-        pygame.time.delay(50)  # Delay between frames to simulate flickering
+        pygame.time.delay(10)  # faster frame update
+
+
+
         
 pygame.init()
 
 # Colors
 BLACK = (0, 0, 0)
 
-def typewriter(text, x, y, color= BLACK, delay=15):
+def typewriter(text, x, y, color= BLACK, delay=10):
     """Render text with a typewriter effect."""
     displayed_text = ""
     for char in text:
@@ -86,15 +105,13 @@ def render_text(text, x, y, color=WHITE):
     screen.blit(text_surface, (x, y))
 
 def intro_screen():
-    """Display the intro screen with the 'You are captured...' message."""
-    running = True
-    while running:
-        screen.fill(BLACK)
-        typewriter("You are captured in a mysterious room!", 150, 200, WHITE)
-        typewriter("Solve the puzzles to escape.", 200, 250, WHITE)
-        typewriter("Press ENTER to start the game...", 200, 300, GREEN)
-        pygame.display.update()
+    screen.fill(BLACK)
+    typewriter("You are captured in a mysterious room!", 150, 200, WHITE)
+    typewriter("Solve the puzzles to escape.", 200, 250, WHITE)
+    typewriter("Press ENTER to start the game...", 200, 300, GREEN)
+    pygame.display.update()
 
+    while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -173,7 +190,7 @@ def main():
         return
 
     # Show the glitch effect
-    glitch_effect(duration=4)
+    glitch_effect(duration=2)
 
     # Start the puzzle game
     puzzle_game()
