@@ -7,8 +7,8 @@ pygame.init()  # This initializes all Pygame modules, including fonts and mixer
 
 # Initialize pygame mixer and load sound effects
 pygame.mixer.init()
-typewriter_sound = pygame.mixer.Sound(r"typewriter-typing-68696.mp3")  # Replace with your sound file path
-hacking_sound = pygame.mixer.Sound(r"tv-static-noise-291374.mp3")  # Use only this sound file
+typewriter_sound = pygame.mixer.Sound(r"Escape_Room_2025\typewriter-typing-68696.mp3")  # Replace with your sound file path
+hacking_sound = pygame.mixer.Sound(r"Escape_Room_2025\typewriter-typing-68696.mp3")  # Use only this sound file
 
 # Screen settings
 WIDTH, HEIGHT = 800, 600
@@ -30,58 +30,57 @@ def render_text(text, x, y, color=WHITE):
     screen.blit(text_surface, (x, y))
 
 def glitch_effect(duration=4):
-    """Chaotic and fast hacking animation with erratic code rain and flickering warnings."""
+    """Display a realistic glitch effect resembling an old TV no-signal screen with sound."""
+    hacking_sound.play(-1)  # Play the hacking sound in a loop
     start_time = time.time()
-    code_columns = [random.randint(0, WIDTH) for _ in range(40)]
-    column_speeds = [random.uniform(8.0, 16.0) for _ in range(len(code_columns))]
-    trails = [[] for _ in code_columns]
+    while time.time() - start_time < duration:
+        screen.fill(BLACK)  # Clear the screen
 
-    # Play the hacking sound effect in a loop
-    hacking_sound.play(-1)  # -1 means loop indefinitely
+        # Add random noise (static pixels)
+        for _ in range(5000):  # Increase the number of "ants" (random pixels)
+            x = random.randint(0, WIDTH - 1)
+            y = random.randint(0, HEIGHT - 1)
+            color = random.choice([WHITE, BLACK, (100, 100, 100), (50, 50, 50)])  # Add more gray shades
+            screen.set_at((x, y), color)  # Set the pixel color at (x, y)
 
-    try:
-        while time.time() - start_time < duration:
-            screen.fill(BLACK)
+        # Add flickering horizontal lines
+        for _ in range(15):  # Increase the number of lines
+            x_start = 0
+            y = random.randint(0, HEIGHT - 1)
+            x_end = WIDTH
+            color = random.choice([WHITE, (150, 150, 150), (200, 200, 200)])
+            pygame.draw.line(screen, color, (x_start, y), (x_end, y), random.randint(1, 3))  # Random thickness
 
-            # Fast and chaotic code rain
-            for i, col in enumerate(code_columns):
-                speed = column_speeds[i]
-                trail = trails[i]
+        # Add random rectangles (screen distortion)
+        for _ in range(8):  # Increase the number of rectangles
+            x = random.randint(0, WIDTH - 50)
+            y = random.randint(0, HEIGHT - 50)
+            width = random.randint(50, 200)
+            height = random.randint(10, 50)
+            color = random.choice([WHITE, BLACK, (50, 50, 50), (80, 80, 80)])
+            pygame.draw.rect(screen, color, (x, y, width, height))
 
-                if not trail or trail[-1][1] > random.randint(10, 30):
-                    char = random.choice("アイウエオカキクケコサシスセソABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()")
-                    trail.append([char, 0])
+        # Add vertical bars (signal interference)
+        for _ in range(5):  # Number of vertical bars
+            x = random.randint(0, WIDTH - 1)
+            height = random.randint(50, HEIGHT)
+            color = random.choice([WHITE, (100, 100, 100), (150, 150, 150)])
+            pygame.draw.line(screen, color, (x, 0), (x, height), random.randint(1, 3))
 
-                new_trail = []
-                for j, (char, y) in enumerate(trail):
-                    fade = max(0, 255 - j * 35)
-                    color = (0, fade, 0)
-                    x_jitter = col + random.randint(-2, 2)  # slight horizontal chaos
-                    render_text(char, x_jitter, int(y), color)
-                    y += speed + random.uniform(-2, 4)  # speed variation
-                    if random.random() < 0.05:
-                        y += 50  # glitch jump
-                    if y < HEIGHT:
-                        new_trail.append([char, y])
-                trails[i] = new_trail
+        # Add screen flicker effect
+        if random.random() < 0.1:  # Occasionally invert the screen colors
+            inverted_surface = pygame.Surface((WIDTH, HEIGHT))
+            for x in range(WIDTH):
+                for y in range(HEIGHT):
+                    color = screen.get_at((x, y))
+                    inverted_color = (255 - color.r, 255 - color.g, 255 - color.b)
+                    inverted_surface.set_at((x, y), inverted_color)
+            screen.blit(inverted_surface, (0, 0))
 
-            # Aggressive flickering scanlines
-            if random.random() < 0.5:
-                for _ in range(random.randint(3, 6)):
-                    y = random.randint(0, HEIGHT)
-                    color = (0, random.randint(100, 255), 0)
-                    pygame.draw.line(screen, color, (0, y), (WIDTH, y), 1)
+        pygame.display.update()
+        pygame.time.delay(random.randint(30, 70))  # Randomize delay for more realism
 
-            # Flickering warning
-            if random.random() < 0.7:
-                render_text("☠", WIDTH // 2 - 20 + random.randint(-5, 5), HEIGHT // 2 - 60 + random.randint(-5, 5), RED)
-                render_text("SYSTEM FAILURE!", WIDTH // 2 - 110 + random.randint(-5, 5), HEIGHT // 2 + 30 + random.randint(-5, 5), RED)
-
-            pygame.display.update()
-            pygame.time.delay(10)  # faster frame update
-    finally:
-        # Stop the sound effect after the glitch effect ends
-        hacking_sound.stop()
+    hacking_sound.stop()  # Stop the sound after the glitch effect ends
 
 def typewriter(text, x, y, color=BLACK, delay=150):
     """Render text with a typewriter effect and sound."""
@@ -113,6 +112,8 @@ def intro_screen():
                 return False
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                 return True
+        # Ensure the screen remains static after rendering the text
+        pygame.display.update()
 
 def main():
     """Main function to run the game."""

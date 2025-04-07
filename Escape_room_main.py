@@ -3,46 +3,77 @@ import time
 
 import random
 
+
+# Initialize pygame
+pygame.init()  # This initializes all Pygame modules, including fonts and mixer
+
+# Initialize pygame mixer and load sound effects
+pygame.mixer.init()
+typewriter_sound = pygame.mixer.Sound(r"Escape_Room_2025\typewriter-typing-68696.mp3")  # Replace with your sound file path
+hacking_sound = pygame.mixer.Sound(r"Escape_Room_2025\tv-static-noise-291374.mp3")  # Use only this sound file
+
+
+
 def glitch_effect(duration=4):
-    """Display a realistic glitch effect resembling static noise for a short duration."""
+    """Display a realistic glitch effect resembling an old TV no-signal screen with sound."""
+    hacking_sound.play(-1)  # Play the hacking sound in a loop
     start_time = time.time()
     while time.time() - start_time < duration:
         screen.fill(BLACK)  # Clear the screen
 
         # Add random noise (static pixels)
-        for _ in range(3000):  # Number of "ants" (random pixels)
+        for _ in range(5000):  # Increase the number of "ants" (random pixels)
             x = random.randint(0, WIDTH - 1)
             y = random.randint(0, HEIGHT - 1)
-            color = random.choice([WHITE, BLACK, (100, 100, 100)])  # Add gray for variation
+            color = random.choice([WHITE, BLACK, (100, 100, 100), (50, 50, 50)])  # Add more gray shades
             screen.set_at((x, y), color)  # Set the pixel color at (x, y)
 
         # Add flickering horizontal lines
-        for _ in range(10):  # Number of lines
+        for _ in range(15):  # Increase the number of lines
             x_start = 0
             y = random.randint(0, HEIGHT - 1)
             x_end = WIDTH
-            color = random.choice([WHITE, (150, 150, 150)])
+            color = random.choice([WHITE, (150, 150, 150), (200, 200, 200)])
             pygame.draw.line(screen, color, (x_start, y), (x_end, y), random.randint(1, 3))  # Random thickness
 
         # Add random rectangles (screen distortion)
-        for _ in range(5):  # Number of rectangles
+        for _ in range(8):  # Increase the number of rectangles
             x = random.randint(0, WIDTH - 50)
             y = random.randint(0, HEIGHT - 50)
             width = random.randint(50, 200)
             height = random.randint(10, 50)
-            color = random.choice([WHITE, BLACK, (50, 50, 50)])
+            color = random.choice([WHITE, BLACK, (50, 50, 50), (80, 80, 80)])
             pygame.draw.rect(screen, color, (x, y, width, height))
 
+        # Add vertical bars (signal interference)
+        for _ in range(5):  # Number of vertical bars
+            x = random.randint(0, WIDTH - 1)
+            height = random.randint(50, HEIGHT)
+            color = random.choice([WHITE, (100, 100, 100), (150, 150, 150)])
+            pygame.draw.line(screen, color, (x, 0), (x, height), random.randint(1, 3))
+
+        # Add screen flicker effect
+        if random.random() < 0.1:  # Occasionally invert the screen colors
+            inverted_surface = pygame.Surface((WIDTH, HEIGHT))
+            for x in range(WIDTH):
+                for y in range(HEIGHT):
+                    color = screen.get_at((x, y))
+                    inverted_color = (255 - color.r, 255 - color.g, 255 - color.b)
+                    inverted_surface.set_at((x, y), inverted_color)
+            screen.blit(inverted_surface, (0, 0))
+
         pygame.display.update()
-        pygame.time.delay(50)  # Delay between frames to simulate flickering
+        pygame.time.delay(random.randint(30, 70))  # Randomize delay for more realism
+
+    hacking_sound.stop()  # Stop the sound after the glitch effect ends
         
 pygame.init()
 
 # Colors
 BLACK = (0, 0, 0)
 
-def typewriter(text, x, y, color= BLACK, delay=15):
-    """Render text with a typewriter effect."""
+def typewriter(text, x, y, color=BLACK, delay=10):
+    """Render text with a typewriter effect and sound."""
     displayed_text = ""
     for char in text:
         displayed_text += char
@@ -50,7 +81,11 @@ def typewriter(text, x, y, color= BLACK, delay=15):
         screen.fill(BLACK, (x, y, WIDTH, 50))  # Clear the previous text line
         screen.blit(text_surface, (x, y))
         pygame.display.update()
+
+        # Play the typewriter sound effect while rendering the character
+        typewriter_sound.play()
         pygame.time.delay(delay)  # Delay in milliseconds
+    typewriter_sound.stop()  # Stop the sound after the entire text is rendered
 
 
 
@@ -86,15 +121,14 @@ def render_text(text, x, y, color=WHITE):
     screen.blit(text_surface, (x, y))
 
 def intro_screen():
-    """Display the intro screen with the 'You are captured...' message."""
-    running = True
-    while running:
-        screen.fill(BLACK)
-        typewriter("You are captured in a mysterious room!", 150, 200, WHITE)
-        typewriter("Solve the puzzles to escape.", 200, 250, WHITE)
-        typewriter("Press ENTER to start the game...", 200, 300, GREEN)
-        pygame.display.update()
+    """Display the intro screen with the 'You are captured...' message once."""
+    screen.fill(BLACK)
+    typewriter("You are captured in a mysterious room!", 150, 200, WHITE)
+    typewriter("Solve the puzzles to escape.", 200, 250, WHITE)
+    typewriter("Press ENTER to start the game...", 200, 300, GREEN)
+    pygame.display.update()
 
+    while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -102,8 +136,8 @@ def intro_screen():
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                 return True
 
-def puzzle_game():
-    """Run the alphanumeric puzzle game."""
+def puzzle_game(start_time, total_time):
+    """Run the alphanumeric puzzle game with a timer."""
     start_index = 0
     running = True
     user_input = ""
@@ -111,6 +145,15 @@ def puzzle_game():
 
     while running:
         screen.fill(BLACK)
+
+        # Calculate remaining time
+        elapsed_time = int(time.time() - start_time)
+        remaining_time = max(0, total_time - elapsed_time)  # Ensure it doesn't go below 0
+        minutes = remaining_time // 60
+        seconds = remaining_time % 60
+
+        # Display the timer
+        render_text(f"Time Left: {minutes:02}:{seconds:02}", WIDTH - 200, 20, RED)
 
         # Display the current 10 alphanumeric strings
         current_chunk = alphanumeric_list[start_index:start_index + 10]
@@ -126,6 +169,15 @@ def puzzle_game():
 
         pygame.display.update()
 
+        # Check if time is up
+        if remaining_time <= 0:
+            screen.fill(BLACK)
+            typewriter("Time's Up! Game Over.", 150, HEIGHT // 2, RED)
+            pygame.display.update()
+            time.sleep(3)
+            running = False  # Exit the game loop
+            return
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -136,15 +188,21 @@ def puzzle_game():
                     number_list = [item[1:] for item in current_chunk[::-1] if item[0] in 'AEIOU']
                     answer = ''.join(number_list)
                     if user_input == answer:
-                        render_text("Correct!", 50, 550, GREEN)
-                        pygame.display.update()
-                        time.sleep(2)
+                        
 
-                        # Move to the next chunk
-                        start_index += 10
-                        if start_index >= len(alphanumeric_list):
-                            start_index = 0  # Wrap around to the beginning
-                        user_input = ""  # Reset user input
+                        screen.fill(BLACK)  # Clear the screen for the next chunk
+                        render_text("Level 1 Complete!", 150, HEIGHT // 2, GREEN)
+                        render_text("Go To Next Puzzle On Your Right", 150, HEIGHT // 2 + 30, GREEN)
+                        render_text("Your Clues Are:", 150, HEIGHT // 2 + 50, GREEN)
+                        render_text("For next puzzle: 3520", 150, HEIGHT // 2 + 100, GREEN)
+                        render_text("To Fetch RFID Tag: 5", 150, HEIGHT // 2 + 150, GREEN)
+                        pygame.display.update()
+                        time.sleep(5)  # Pause for 5 seconds before proceeding
+                       
+
+
+
+                        
                     else:
                         incorrect_attempts += 1
                         render_text("Incorrect!", 50, 550, RED)
@@ -163,10 +221,11 @@ def puzzle_game():
                 else:
                     user_input += event.unicode
 
-
 def main():
     """Main function to run the game."""
     running = True
+    total_time = 15 * 60  # 15 minutes in seconds
+    start_time = time.time()  # Record the start time
 
     # Show the intro screen first
     if not intro_screen():
@@ -176,7 +235,7 @@ def main():
     glitch_effect(duration=4)
 
     # Start the puzzle game
-    puzzle_game()
+    puzzle_game(start_time, total_time)  # Pass the required arguments
 
     pygame.quit()
 
