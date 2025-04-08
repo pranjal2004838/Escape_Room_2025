@@ -11,6 +11,7 @@ pygame.init()  # This initializes all Pygame modules, including fonts and mixer
 pygame.mixer.init()
 typewriter_sound = pygame.mixer.Sound(r"Escape_Room_2025\typewriter-typing-68696.mp3")  # Replace with your sound file path
 hacking_sound = pygame.mixer.Sound(r"Escape_Room_2025\tv-static-noise-291374.mp3")  # Use only this sound file
+clock_sound = pygame.mixer.Sound(r"Escape_Room_2025\one-minute-mechanical-clock-ticking-sound-effect-253099.mp3")  # Replace with your sound file path
 
 
 
@@ -190,14 +191,34 @@ def puzzle_game(start_time, total_time):
                     if user_input == answer:
                         
 
-                        screen.fill(BLACK)  # Clear the screen for the next chunk
-                        render_text("Level 1 Complete!", 150, HEIGHT // 2, GREEN)
-                        render_text("Go To Next Puzzle On Your Right", 150, HEIGHT // 2 + 30, GREEN)
-                        render_text("Your Clues Are:", 150, HEIGHT // 2 + 50, GREEN)
-                        render_text("For next puzzle: 3520", 150, HEIGHT // 2 + 100, GREEN)
-                        render_text("To Fetch RFID Tag: 5", 150, HEIGHT // 2 + 150, GREEN)
+                        while remaining_time > 0:  # Keep the screen static while the timer runs
+                            screen.fill(BLACK)  # Clear the screen for the next chunk
+                            elapsed_time = int(time.time() - start_time)
+                            remaining_time = max(0, total_time - elapsed_time)  # Ensure it doesn't go below 0
+                            minutes = remaining_time // 60
+                            seconds = remaining_time % 60
+
+                            render_text(f"Time Left: {minutes:02}:{seconds:02}", WIDTH - 200, 20, RED)
+                            render_text("Level 1 Complete!", 150, HEIGHT // 2, GREEN)
+                            render_text("Go To Next Puzzle On Your Right", 150, HEIGHT // 2 + 30, GREEN)
+                            render_text("Your Clues Are:", 150, HEIGHT // 2 + 50, GREEN)
+                            render_text("For next puzzle: 3520", 150, HEIGHT // 2 + 100, GREEN)
+                            render_text("To Fetch RFID Tag: 5", 150, HEIGHT // 2 + 150, GREEN)
+                            pygame.display.update()
+                            pygame.time.delay(1000)  # Delay to reduce CPU usage
+
+
+                            if remaining_time <= 870:
+                                clock_sound.play(-1)
+
+                                
+                        
+                        # Once the timer runs out, exit the loop
+                        screen.fill(BLACK)
+                        typewriter("Time's Up! Game Over.", 150, HEIGHT // 2, RED)
                         pygame.display.update()
-                        time.sleep(5)  # Pause for 5 seconds before proceeding
+                        time.sleep(3)
+                        running = False  # Exit the game loop
                        
 
 
