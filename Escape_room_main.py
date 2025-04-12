@@ -1,8 +1,28 @@
 import pygame
 import time
 import random
+import os
 
-# Initialize pygame and mixer
+def update_run_count():
+    count_file = "run_count.txt"
+    if os.path.exists(count_file):
+        with open(count_file, "r") as file:
+            try:
+                run_count = int(file.read().strip())
+            except ValueError:
+                run_count = 0
+    else:
+        run_count = 0
+
+    run_count += 1
+    if run_count > 5:
+        run_count = 1
+
+    with open(count_file, "w") as file:
+        file.write(str(run_count))
+    
+    return run_count
+
 pygame.init()
 pygame.mixer.init()
 
@@ -10,8 +30,9 @@ pygame.mixer.init()
 typewriter_sound = pygame.mixer.Sound(r"typewriter-typing-68696.mp3")
 hacking_sound = pygame.mixer.Sound(r"tv-static-noise-291374.mp3")
 clock_sound = pygame.mixer.Sound(r"one-minute-mechanical-clock-ticking-sound-effect-253099.mp3")
+game_over_sound = pygame.mixer.Sound(r"game-over-38511.mp3")
 
-# Screen settings
+# Screen setup
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Cyber Escape Room")
@@ -24,7 +45,6 @@ DARK_GREEN = (0, 80, 0)
 RED = (200, 0, 0)
 GRAY = (20, 20, 20)
 
-# Fonts (fallback to system font if Orbitron is missing)
 def get_font(size):
     try:
         return pygame.font.Font("Orbitron-Regular.ttf", size)
@@ -34,37 +54,24 @@ def get_font(size):
 font = get_font(24)
 timer_font = get_font(60)
 
-# Alphanumeric strings (with hidden pattern)
-alphanumeric_list = [
-    "A1", "B2", "E3", "C4", "O5", "D6", "I7", "F8", "U9", "G10",
-    "H11", "J12", "A13", "K14", "E15", "L16", "I17", "M18", "O19", "N20",
-    "P21", "Q22", "U23", "R24", "A25", "S26", "E27", "T28", "I29", "V30",
-    "W31", "X32", "O33", "Y34", "A35", "Z36", "E37", "B38", "U39", "C40",
-    "D41", "F42", "I43", "G44", "O45", "H46", "U47", "J48", "A49", "K50",
-    "L51", "M52", "E53", "N54", "I55", "P56", "O57", "Q58", "A59", "R60",
-    "S61", "T62", "U63", "V64", "E65", "W66", "I67", "X68", "O69", "Y70",
-    "Z71", "B72", "A73", "C74", "E75", "D76", "I77", "F78", "U79", "G80",
-    "H81", "J82", "O83", "K84", "A85", "L86", "E87", "M88", "I89", "N90",
-    "P91", "Q92", "U93", "R94", "E95", "S96", "I97", "T98", "O99", "V100"
-]
+alphanumeric_list = []
+vowels = "AEIOU"
+consonants = "BCDFGHJKLMNPQRSTVWXYZ"
+
+for i in range(1, 51):
+    if random.random() < 0.4:  # 40% chance to pick a vowel
+        letter = random.choice(vowels)
+    else:  # 60% chance to pick a consonant
+        letter = random.choice(consonants)
+    alphanumeric_list.append(f"{letter}{i}")
+
+random.shuffle(alphanumeric_list)  # Shuffle the list for added randomness
 
 def draw_matrix_background():
     screen.fill(BLACK)
     for i in range(0, WIDTH, 40):
         for j in range(0, HEIGHT, 40):
             pygame.draw.rect(screen, GRAY, (i, j, 40, 40), 1)
-
-def render_glow_text(text, x, y, base_color=GREEN, delay=50):
-    displayed_text = ""
-    for char in text:
-        displayed_text += char
-        draw_matrix_background()
-        shadow = font.render(displayed_text, True, DARK_GREEN)
-        screen.blit(shadow, (x+2, y+2))
-        text_surface = font.render(displayed_text, True, base_color)
-        screen.blit(text_surface, (x, y))
-        pygame.display.update()
-        pygame.time.delay(delay)
 
 def render_timer(remaining_time):
     minutes = remaining_time // 60
@@ -79,7 +86,6 @@ def glitch_effect(duration=4):
     start_time = time.time()
     while time.time() - start_time < duration:
         draw_matrix_background()
-
         for _ in range(5000):
             x = random.randint(0, WIDTH - 1)
             y = random.randint(0, HEIGHT - 1)
@@ -103,23 +109,29 @@ def glitch_effect(duration=4):
         pygame.time.delay(random.randint(30, 70))
     hacking_sound.stop()
 
-def typewriter(text, x, y, color=GREEN, delay=100):
+def typewriter(text, x=None, y=None, color=GREEN, delay=10, center=True):
     displayed_text = ""
+    if center:
+        text_surface = font.render(text, True, color)
+        text_rect = text_surface.get_rect(center=(WIDTH // 2 if x is None else x, y))
+        x = text_rect.x
     for char in text:
         displayed_text += char
-        draw_matrix_background()
         text_surface = font.render(displayed_text, True, color)
         screen.blit(text_surface, (x, y))
         pygame.display.update()
         typewriter_sound.play()
         pygame.time.delay(delay)
     typewriter_sound.stop()
+    final_surface = font.render(text, True, color)
+    screen.blit(final_surface, (x, y))
+    pygame.display.update()
 
 def intro_screen():
     draw_matrix_background()
-    typewriter("You are captured in a mysterious room!", 150, 200)
-    typewriter("Solve the puzzles to escape.", 200, 250)
-    typewriter("Press ENTER to start the game...", 200, 300, (0, 255, 180))
+    typewriter("You are captured in a mysterious room!", y=200)
+    typewriter("Solve the puzzles to escape.", y=250)
+    typewriter("Press ENTER to start the game...", y=300, color=(0, 255, 180))
     pygame.display.update()
 
     while True:
@@ -130,35 +142,42 @@ def intro_screen():
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                 return True
 
-def puzzle_game(start_time, total_time):
-    start_index = 0
+def puzzle_game(start_time, total_time, start_index):
     user_input = ""
     incorrect_attempts = 0
     running = True
 
+    current_chunk = alphanumeric_list[start_index:start_index + 10]
+    chunk_surfaces = []
+    y_offset = 100
+    for item in current_chunk:
+        text_surface = font.render(item, True, GREEN)
+        chunk_surfaces.append((text_surface, (50, y_offset)))
+        y_offset += 30
+
     while running:
         draw_matrix_background()
 
+        for surface, position in chunk_surfaces:
+            screen.blit(surface, position)
+
         elapsed_time = int(time.time() - start_time)
         remaining_time = max(0, total_time - elapsed_time)
-
         render_timer(remaining_time)
 
-        current_chunk = alphanumeric_list[start_index:start_index + 10]
-        y_offset = 100
-        for item in current_chunk:
-            render_glow_text(item, 50, y_offset)
-            y_offset += 30
-
-        render_glow_text("Enter numbers from vowels in reverse order:", 50, 400)
-        render_glow_text(f"Your Input: {user_input}", 50, 450, WHITE)
-        render_glow_text(f"Incorrect Attempts: {incorrect_attempts}/3", 50, 500, RED)
+        info_texts = [
+            ("Enter numbers from vowels in reverse order:", 50, 400, GREEN),
+            (f"Your Input: {user_input}", 50, 450, WHITE),
+            (f"Incorrect Attempts: {incorrect_attempts}/3", 50, 500, RED)
+        ]
+        for text, x, y, color in info_texts:
+            screen.blit(font.render(text, True, color), (x, y))
 
         pygame.display.update()
 
         if remaining_time <= 0:
             draw_matrix_background()
-            typewriter("Time's Up! Game Over.", 150, HEIGHT // 2, RED)
+            typewriter("Time's Up! Game Over.", y=HEIGHT // 2, color=RED)
             pygame.display.update()
             time.sleep(3)
             return
@@ -178,11 +197,11 @@ def puzzle_game(start_time, total_time):
                         while remaining_time > 0:
                             draw_matrix_background()
                             render_timer(remaining_time)
-                            render_glow_text("Level 1 Complete!", 150, HEIGHT // 2, GREEN)
-                            render_glow_text("Go To Next Puzzle On Your Right", 150, HEIGHT // 2 + 30)
-                            render_glow_text("Your Clues Are:", 150, HEIGHT // 2 + 50)
-                            render_glow_text("For next puzzle: 3520", 150, HEIGHT // 2 + 100)
-                            render_glow_text("To Fetch RFID Tag: 5", 150, HEIGHT // 2 + 150)
+                            typewriter("Level 1 Complete!", y=HEIGHT // 2, color=GREEN)
+                            typewriter("Go To Next Puzzle On Your Right", y=HEIGHT // 2 + 30)
+                            typewriter("Your Clues Are:", y=HEIGHT // 2 + 60)
+                            typewriter("For next puzzle: 3520", y=HEIGHT // 2 + 100)
+                            typewriter("To Fetch RFID Tag: 5", y=HEIGHT // 2 + 140)
                             pygame.display.update()
                             time.sleep(1)
                             elapsed_time = int(time.time() - start_time)
@@ -192,37 +211,19 @@ def puzzle_game(start_time, total_time):
                                 if remaining_time <= 0:
                                     clock_sound.stop()
                                     draw_matrix_background()
-                                    typewriter("Time's Up! Game Over.", 150, HEIGHT // 2, RED)
+                                    typewriter("Time's Up! Game Over.", y=HEIGHT // 2, color=RED)
                                     pygame.display.update()
                                     time.sleep(3)
                                     return
-                        return
-                        render_glow_text("Level 1 Complete!", 150, HEIGHT // 2, GREEN)
-                        render_glow_text("Go To Next Puzzle On Your Right", 150, HEIGHT // 2 + 30)
-                        render_glow_text("Your Clues Are:", 150, HEIGHT // 2 + 50)
-                        render_glow_text("For next puzzle: 3520", 150, HEIGHT // 2 + 100)
-                        render_glow_text("To Fetch RFID Tag: 5", 150, HEIGHT // 2 + 150)
-                        pygame.display.update()
-                        time.sleep(5)
-                        return
-                        render_timer(remaining_time)
-                        render_glow_text("Level 1 Complete!", 150, HEIGHT // 2, GREEN)
-                        render_glow_text("Go To Next Puzzle On Your Right", 150, HEIGHT // 2 + 30)
-                        render_glow_text("Your Clues Are:", 150, HEIGHT // 2 + 50)
-                        render_glow_text("For next puzzle: 3520", 150, HEIGHT // 2 + 100)
-                        render_glow_text("To Fetch RFID Tag: 5", 150, HEIGHT // 2 + 150)
-                        pygame.display.update()
-                        time.sleep(5)
-                        return
                     else:
                         incorrect_attempts += 1
-                        render_glow_text("Incorrect!", 50, 550, RED)
+                        typewriter("Incorrect!", x=50, y=550, color=RED, center=False)
                         pygame.display.update()
                         time.sleep(2)
                         user_input = ""
                         if incorrect_attempts >= 3:
                             draw_matrix_background()
-                            typewriter("Too many incorrect attempts. Game Over.", 100, 250, RED)
+                            typewriter("Too many incorrect attempts. Game Over.", y=250, color=RED)
                             pygame.display.update()
                             time.sleep(3)
                             return
@@ -232,14 +233,13 @@ def puzzle_game(start_time, total_time):
                     user_input += event.unicode
 
 def main():
+    run_count = update_run_count()
+    start_index = (run_count - 1) * 10
     if not intro_screen():
         return
-
     start_time = time.time()
     glitch_effect(duration=4)
-    puzzle_game(start_time, 15 * 60)
-    
-    
+    puzzle_game(start_time, 15 * 60, start_index)
     pygame.quit()
 
 if __name__ == "__main__":
