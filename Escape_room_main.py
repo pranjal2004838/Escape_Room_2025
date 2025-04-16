@@ -6,17 +6,15 @@ import sys
 
 
 binary_numbers = [
-    "0000",  # 0
-    "0001",  # 1
+    
     "0010",  # 2
-    "0011",  # 3
+    
     "0100",  # 4
-    "0101",  # 5
+    
     "0110",  # 6
-    "0111",  # 7
-    "1000",  # 8
-    "1001"   # 9
+    
 ]
+
 
 
 def render_centered_text(text, color, y=None, delay=100):
@@ -39,7 +37,7 @@ def update_run_count():
         run_count = 0
 
     run_count += 1
-    if run_count > 10:
+    if run_count > 3:
         run_count = 1
 
     with open(count_file, "w") as file:
@@ -77,25 +75,27 @@ def get_font(size):
 font = get_font(24)
 timer_font = get_font(60)
 
-alphanumeric_list = [
-    "A12", "B34", "C56", "D78", "E90", "F23", "G45", "H67", "I89", "J10",
-    "K32", "L54", "M76", "N98", "O21", "P43", "Q65", "R87", "S09", "T31",
-    "U53", "V75", "W97", "X20", "Y42", "Z64", "A86", "B08", "C30", "D52",
-    "E74", "F96", "G19", "H41", "I63", "J85", "K07", "L29", "M51", "N73",
-    "O95", "P18", "Q40", "R62", "S84", "T06", "U28", "V50", "W72", "X94",
-    "Y17", "Z39", "A61", "B83", "C05", "D27", "E49", "F71", "G93", "H16",
-    "I38", "J60", "K82", "L04", "M26", "N48", "O70", "P92", "Q15", "R37",
-    "S59", "T81", "U03", "V25", "W47", "X69", "Y91", "Z14", "A36", "B58",
-    "C80", "D02", "E24", "F46", "G68", "H90", "I13", "J35", "K57", "L79",
-    "M01", "N23", "O45", "P67", "Q89", "R12", "S34", "T56", "U78", "V90"
-]
+import random
+import string
+
+def generate_alphanum_list(length):
+    alphanum_set = set()
+    while len(alphanum_set) < length:
+        letter = random.choice(string.ascii_uppercase)
+        number = f"{random.randint(0, 99):02}"
+        entry = f"{letter}{number}"
+        alphanum_set.add(entry)
+    return list(alphanum_set)
+
+# Example usage
+alphanumeric_list = generate_alphanum_list(10)
 
 
 def first_screen():
     """Display the first welcome screen."""
     draw_matrix_background()
-    typewriter("Welcome to the Cyber Escape Room!", WIDTH // 2 - 300, HEIGHT // 2 - 100, GREEN, delay=150)
-    typewriter("Press ENTER to continue...", WIDTH // 2 - 220, HEIGHT // 2, (0, 255, 180), delay=150)
+    typewriter("Welcome to the Cyber Escape Room!", WIDTH // 2 - 300, HEIGHT // 2 - 100, GREEN, delay=200   )
+    typewriter("Press ENTER to continue...", WIDTH // 2 - 220, HEIGHT // 2, (0, 255, 180), delay=200)
     pygame.display.update()
 
     # Start timer when user presses enter
@@ -234,7 +234,8 @@ def puzzle_game(start_time, total_time, start_index, rfid):
     y_offset = 100
     for item in current_chunk:
         text_surface = font.render(item, True, GREEN)
-        chunk_surfaces.append((text_surface, (WIDTH // 2 - 200, y_offset)))
+        text_rect = text_surface.get_rect(center=(WIDTH // 2, y_offset + 50))  # Adjusted y_offset for more spacing
+        chunk_surfaces.append((text_surface, text_rect.topleft))
         y_offset += 30
 
     success = False
@@ -248,12 +249,16 @@ def puzzle_game(start_time, total_time, start_index, rfid):
         render_timer(remaining_time)
 
         # Handle time-out at any point
-        if remaining_time <= 0:
-            draw_matrix_background()
-            render_centered_text("Time's Up! Game Over.", RED)
-            pygame.display.update()
-            pygame.time.wait(3000)
-            return
+        if remaining_time <= 60:
+            clock_sound.play()
+            if remaining_time <= 0:
+                draw_matrix_background()
+                game_over_sound.play()
+                typewriter("Time's Up! Game Over.", WIDTH // 2 - 150, HEIGHT // 2, RED, delay=200)
+                pygame.display.update()
+                pygame.time.wait(3000)
+                return
+            
 
         # Draw puzzle or success screen based on game state
         if not success:
@@ -269,7 +274,7 @@ def puzzle_game(start_time, total_time, start_index, rfid):
             ]
             space_between = 40
             for idx, (text, x, y, color) in enumerate(static_texts):
-                y_position = HEIGHT // 2 + (idx - len(static_texts) // 2) * space_between
+                y_position = HEIGHT // 2 + 100 + (idx * space_between)  # Start below the alphanums
                 render_centered_text(text, color, y=y_position)
         else:
             # Success screen with typewriter effect (this will only run once)
@@ -288,7 +293,7 @@ def puzzle_game(start_time, total_time, start_index, rfid):
 
             current_y_offset = y_offset
             for message in messages:
-                typewriter(message, WIDTH // 2 - font.size(message)[0] // 2, current_y_offset, WHITE, delay=100)
+                typewriter(message, WIDTH // 2 - font.size(message)[0] // 2, current_y_offset, WHITE, delay=200)
                 current_y_offset += message_height + line_spacing  # Space between lines
 
             # Keep the final messages static after the typewriter effect
@@ -315,6 +320,7 @@ def puzzle_game(start_time, total_time, start_index, rfid):
                 render_timer(remaining_time)
                 pygame.display.update()
 
+                
                 # Break the loop when time is up
                 if remaining_time <= 0:
                     break
@@ -372,6 +378,7 @@ def puzzle_game(start_time, total_time, start_index, rfid):
 
                         if incorrect_attempts >= 2:
                             draw_matrix_background()
+                            game_over_sound.play()
                             render_centered_text("Too many incorrect attempts. Game Over.", RED)
                             pygame.display.update()
                             pygame.time.wait(3000)
