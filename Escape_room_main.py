@@ -49,9 +49,9 @@ def update_run_count():
 pygame.init()
 pygame.mixer.init()
 
-typewriter_sound = pygame.mixer.Sound(r"typewriter-typing-68696.mp3")
+typewriter_sound = pygame.mixer.Sound(r"typewriter-typing-68696-[AudioTrimmer.com].mp3")
 hacking_sound = pygame.mixer.Sound(r"tv-static-noise-291374.mp3")
-clock_sound = pygame.mixer.Sound(r"typewriter-typing-68696-[AudioTrimmer.com].mp3")
+clock_sound = pygame.mixer.Sound(r"one-minute-mechanical-clock-ticking-sound-effect-253099.mp3")
 game_over_sound = pygame.mixer.Sound(r"game-over-38511.mp3")
 incorrect_sound = pygame.mixer.Sound(r"wrong-47985-[AudioTrimmer.com].mp3")
 
@@ -97,8 +97,8 @@ alphanumeric_list = generate_alphanum_list(10)
 def first_screen():
     """Display the first welcome screen."""
     draw_matrix_background()
-    typewriter("Welcome to the Cyber Escape Room!", WIDTH // 2 - 300, HEIGHT // 2 - 100, GREEN, delay=20   )
-    typewriter("Press ENTER to continue...", WIDTH // 2 - 220, HEIGHT // 2, (0, 255, 180), delay=20)
+    typewriter("Welcome to the Cyber Escape Room!", WIDTH // 2 - 300, HEIGHT // 2 - 100, GREEN, delay=200   )
+    typewriter("Press ENTER to continue...", WIDTH // 2 - 220, HEIGHT // 2, (0, 255, 180), delay=200)
     pygame.display.update()
 
     # Start timer when user presses enter
@@ -134,7 +134,7 @@ def failsafe_screen():
     lines = failsafe_message.split('\n')
     y = 100
     for line in lines:
-        typewriter(line, WIDTH // 2 - font.size(line)[0] // 2, y, RED, delay=20)
+        typewriter(line, WIDTH // 2 - font.size(line)[0] // 2, y, RED, delay=120)
         y += font.get_height() + 10
 
     waiting = True
@@ -214,9 +214,9 @@ def typewriter(text, x, y, color=GREEN, delay=1):
 
 def intro_screen():
     draw_matrix_background()
-    typewriter("You are captured in a mysterious room!", WIDTH // 2 - 250, HEIGHT // 2 - 100)
-    typewriter("Solve the puzzles to escape.", WIDTH // 2 - 200, HEIGHT // 2 - 50)
-    typewriter("Press ENTER to start the game...", WIDTH // 2 - 220, HEIGHT // 2, (0, 255, 180))
+    
+    typewriter("Solve the puzzles to escape.", WIDTH // 2 - 200, HEIGHT // 2 - 50, delay=170)
+    typewriter("Press ENTER to start the game...", WIDTH // 2 - 220, HEIGHT // 2, (0, 255, 180),delay = 170)
     pygame.display.update()
 
     while True:
@@ -229,7 +229,6 @@ def intro_screen():
 
 def puzzle_game(start_time, total_time, start_index, rfid):
     user_input = ""
-    incorrect_attempts = 0
     running = True
 
     current_chunk = generate_alphanum_list(10)
@@ -251,107 +250,69 @@ def puzzle_game(start_time, total_time, start_index, rfid):
         remaining_time = max(0, total_time - elapsed_time)
         render_timer(remaining_time)
 
-        # Handle time-out at any point
         if remaining_time <= 60:
             clock_sound.play()
             if remaining_time <= 0:
                 draw_matrix_background()
                 game_over_sound.play()
-                typewriter("Time's Up! Game Over.", WIDTH // 2 - 150, HEIGHT // 2, RED, delay=20)
+                render_centered_text("Time's Up! Game Over.", RED)
                 pygame.display.update()
                 pygame.time.wait(3000)
                 return
-            
 
-        # Draw puzzle or success screen based on game state
         if not success:
-            # Show the chunk
             for surface, position in chunk_surfaces:
                 screen.blit(surface, position)
 
-            # Instructions and input
             static_texts = [
-                
+                (f"Enter the numbers extracted from vowels from the reversed list:", WIDTH // 2 - 300, 350, WHITE),
+                (f"Press ENTER to submit your answer.", WIDTH // 2 - 300, 400, WHITE),
                 (f"Your Input: {user_input}", WIDTH // 2 - 300, 450, WHITE),
-                (f"Incorrect Attempts: {incorrect_attempts}/2", WIDTH // 2 - 300, 500, RED)
             ]
             space_between = 40
             for idx, (text, x, y, color) in enumerate(static_texts):
-                y_position = HEIGHT // 2 + 100 + (idx * space_between)  # Start below the alphanums
+                y_position = HEIGHT // 2 + 100 + (idx * space_between)
                 render_centered_text(text, color, y=y_position)
         else:
-            # Success screen with typewriter effect (this will only run once)
             messages = [
                 "Level 1 Complete!",
-                "Go To Next Puzzle On Your Right",
+                "Go To Next Puzzle On Your Left",
                 "Your Clues Are:",
-                "For next puzzle: 3520"
+                "For next puzzle: Find the light Source",
                 f"Your RFID tag is: {rfid}"
             ]
 
-            # Calculate total height for centering messages
             message_height = font.size("A")[1]
             line_spacing = 20
             total_height = len(messages) * message_height + (len(messages) - 1) * line_spacing
-            y_offset = HEIGHT // 2 - total_height // 2  # Center vertically based on total height
+            y_offset = HEIGHT // 2 - total_height // 2
 
-            current_y_offset = y_offset
-            for message in messages:
-                typewriter(message, WIDTH // 2 - font.size(message)[0] // 2, current_y_offset, WHITE, delay=20)
-                current_y_offset += message_height + line_spacing  # Space between lines
-
-            # Keep the final messages static after the typewriter effect
-            current_y_offset = y_offset  # Reset vertical offset
-            for message in messages:
-                text_surface = font.render(message, True, WHITE)
-                screen.blit(text_surface, (WIDTH // 2 - text_surface.get_width() // 2, current_y_offset))
-                current_y_offset += message_height + line_spacing  # Space between lines
-
-            # Continuously render the timer until remaining time becomes zero
             while True:
                 elapsed_time = int(time.time() - start_time)
                 remaining_time = max(0, total_time - elapsed_time)
                 draw_matrix_background()
 
-                # Render the static success messages
                 current_y_offset = y_offset
                 for message in messages:
-                    text_surface = font.render(message, True, WHITE)
-                    screen.blit(text_surface, (WIDTH // 2 - text_surface.get_width() // 2, current_y_offset))
+                    render_centered_text(message, WHITE, y=current_y_offset)
                     current_y_offset += message_height + line_spacing
 
-                # Render the timer
                 render_timer(remaining_time)
                 pygame.display.update()
 
-                
-                # Break the loop when time is up
                 if remaining_time <= 0:
                     break
 
-            # Calculate total height for centering messages
-            message_height = font.size("A")[1]
-            line_spacing = 20
-            total_height = len(messages) * message_height + (len(messages) - 1) * line_spacing
-            y_offset = HEIGHT // 2 - total_height // 2  # Center vertically based on total height
-
+            # Re-display the static messages again after loop ends
             current_y_offset = y_offset
             for message in messages:
-                typewriter(message, WIDTH // 2 - font.size(message)[0] // 2, current_y_offset, WHITE, delay=100)
-                current_y_offset += message_height + line_spacing  # Space between lines
-
-            # Keep the final messages static after the typewriter effect
-            current_y_offset = y_offset  # Reset vertical offset
-            for message in messages:
-                text_surface = font.render(message, True, WHITE)
-                screen.blit(text_surface, (WIDTH // 2 - text_surface.get_width() // 2, current_y_offset))
-                current_y_offset += message_height + line_spacing  # Space between lines
+                render_centered_text(message, WHITE, y=current_y_offset)
+                current_y_offset += message_height + line_spacing
 
             pygame.display.update()
 
         pygame.display.update()
 
-        # Process input events for user typing
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -373,26 +334,15 @@ def puzzle_game(start_time, total_time, start_index, rfid):
                         glitch_effect(duration=2)
                         success = True
                     else:
-                        incorrect_attempts += 1
                         incorrect_sound.play()
                         render_centered_text("Incorrect!", RED, y=HEIGHT - 50)
                         pygame.display.update()
                         pygame.time.wait(1000)
                         user_input = ""
-
-                        if incorrect_attempts >= 2:
-                            draw_matrix_background()
-                            game_over_sound.play()
-                            render_centered_text("Too many incorrect attempts. Game Over.", RED)
-                            pygame.display.update()
-                            pygame.time.wait(3000)
-                            return
-
                 elif event.key == pygame.K_BACKSPACE:
                     user_input = user_input[:-1]
                 else:
                     user_input += event.unicode
-
 
 
 
